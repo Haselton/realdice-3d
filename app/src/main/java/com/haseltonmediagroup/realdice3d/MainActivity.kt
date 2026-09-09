@@ -10,10 +10,13 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.view.MotionEvent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.MobileAds
 import com.haseltonmediagroup.realdice3d.databinding.ActivityMainBinding
 import kotlin.math.abs
+import kotlin.math.max
 import kotlin.math.sqrt
 
 class MainActivity : AppCompatActivity(), SensorEventListener {
@@ -30,10 +33,23 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Keep the banner and result area above gesture/navigation controls on edge-to-edge phones.
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
+            val nav = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+            view.setPadding(
+                view.paddingLeft,
+                view.paddingTop,
+                view.paddingRight,
+                max(view.paddingBottom, nav.bottom)
+            )
+            insets
+        }
+        ViewCompat.requestApplyInsets(binding.root)
+
         MobileAds.initialize(this)
         binding.adView.loadAd(AdRequest.Builder().build())
 
-        soundEngine = DiceSoundEngine()
+        soundEngine = DiceSoundEngine(this)
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
