@@ -37,8 +37,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
-        binding.dice3d.setOnRollSettledListener { value ->
-            binding.resultText.text = "ROLL: $value"
+        binding.dice3d.setOnRollSettledListener { first, second ->
+            binding.resultText.text = "$first + $second = ${first + second}"
             tone.startTone(ToneGenerator.TONE_PROP_BEEP2, 65)
             val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
             vibrator.vibrate(VibrationEffect.createOneShot(32, VibrationEffect.DEFAULT_AMPLITUDE))
