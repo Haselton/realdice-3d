@@ -5,6 +5,8 @@
     <application
         android:allowBackup="true"
         android:label="RealDice 3D"
+        android:icon="@drawable/ic_launcher"
+        android:roundIcon="@drawable/ic_launcher"
         android:theme="@style/Theme.RealDice3D">
         <!-- Google test App ID. Replace with HMG production AdMob App ID before release. -->
         <meta-data
