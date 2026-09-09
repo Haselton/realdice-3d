@@ -8,29 +8,37 @@ import kotlin.math.exp
 import kotlin.math.sin
 import kotlin.random.Random
 
-/** Lightweight procedural audio so prototype builds have synchronized dice sounds without bundled assets. */
+/**
+ * Procedural dice audio designed around short resonant clacks rather than broadband noise.
+ * This keeps the prototype self contained while sounding closer to hard resin dice on a table.
+ */
 class DiceSoundEngine {
-    private val sampleRate = 22050
-    private val impactTracks = Array(5) { index ->
-        makeTrack(buildImpact(seed = 41 + index * 17, brightness = 0.85f + index * 0.07f))
+    private val sampleRate = 44100
+    private val impacts = Array(7) { i ->
+        makeTrack(buildImpact(seed = 200 + i * 31, variant = i))
     }
-    private val launchTrack = makeTrack(buildLaunch())
+    private val launch = makeTrack(buildLaunchCluster())
     private var nextImpact = 0
 
     fun playLaunch(force: Float) {
-        restart(launchTrack, (0.28f + force * 0.11f).coerceIn(0.28f, 0.72f), 1.0f)
+        restart(
+            launch,
+            (0.34f + force * 0.12f).coerceIn(0.34f, 0.78f),
+            (0.96f + Random.nextFloat() * 0.08f)
+        )
     }
 
     fun playImpact(strength: Float) {
-        val track = impactTracks[nextImpact]
-        nextImpact = (nextImpact + 1) % impactTracks.size
-        val pitch = 0.88f + Random.nextFloat() * 0.24f
-        restart(track, (0.18f + strength * 0.64f).coerceIn(0.16f, 0.88f), pitch)
+        val track = impacts[nextImpact]
+        nextImpact = (nextImpact + 1) % impacts.size
+        val pitch = 0.91f + Random.nextFloat() * 0.18f
+        val volume = (0.18f + strength * 0.72f).coerceIn(0.16f, 0.92f)
+        restart(track, volume, pitch)
     }
 
     fun release() {
-        impactTracks.forEach { runCatching { it.release() } }
-        runCatching { launchTrack.release() }
+        impacts.forEach { runCatching { it.release() } }
+        runCatching { launch.release() }
     }
 
     private fun restart(track: AudioTrack, volume: Float, pitch: Float) {
@@ -39,13 +47,12 @@ class DiceSoundEngine {
             track.flush()
             track.setPlaybackHeadPosition(0)
             track.setVolume(volume)
-            track.playbackRate = (sampleRate * pitch).toInt().coerceIn(16000, 30000)
+            track.playbackRate = (sampleRate * pitch).toInt().coerceIn(32000, 48000)
             track.play()
         }
     }
 
     private fun makeTrack(samples: ShortArray): AudioTrack {
-        val bytes = samples.size * 2
         return AudioTrack.Builder()
             .setAudioAttributes(
                 AudioAttributes.Builder()
@@ -60,33 +67,72 @@ class DiceSoundEngine {
                     .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
                     .build()
             )
-            .setBufferSizeInBytes(bytes)
+            .setBufferSizeInBytes(samples.size * 2)
             .setTransferMode(AudioTrack.MODE_STATIC)
             .build()
             .also { it.write(samples, 0, samples.size) }
     }
 
-    private fun buildImpact(seed: Int, brightness: Float): ShortArray {
+    private fun buildImpact(seed: Int, variant: Int): ShortArray {
         val rnd = Random(seed)
-        val count = (sampleRate * 0.095f).toInt()
-        return ShortArray(count) { i ->
+        val length = (sampleRate * 0.075f).toInt()
+        val f1 = 620f + variant * 34f
+        val f2 = 1280f + variant * 61f
+        val f3 = 2380f + variant * 83f
+        val body = 165f + variant * 7f
+
+        return ShortArray(length) { i ->
             val t = i.toFloat() / sampleRate
-            val env = exp(-t * 46f)
-            val thud = sin(2f * PI.toFloat() * (150f + brightness * 40f) * t) * 0.42f
-            val click = (rnd.nextFloat() * 2f - 1f) * 0.55f * exp(-t * 85f)
-            ((thud + click) * env * 30000f).toInt().coerceIn(-32767, 32767).toShort()
+            val hardEnv = exp(-t * 74f)
+            val ringEnv = exp(-t * 35f)
+            val bodyEnv = exp(-t * 48f)
+
+            val click = if (i < 18) {
+                (rnd.nextFloat() * 2f - 1f) * (1f - i / 18f)
+            } else 0f
+
+            val resonances =
+                sin(2f * PI.toFloat() * f1 * t) * 0.31f +
+                sin(2f * PI.toFloat() * f2 * t + 0.7f) * 0.22f +
+                sin(2f * PI.toFloat() * f3 * t + 1.1f) * 0.13f
+            val lowBody = sin(2f * PI.toFloat() * body * t) * 0.24f
+
+            val sample = click * hardEnv * 0.36f + resonances * ringEnv + lowBody * bodyEnv
+            (sample * 28500f).toInt().coerceIn(-32767, 32767).toShort()
         }
     }
 
-    private fun buildLaunch(): ShortArray {
-        val rnd = Random(917)
-        val count = (sampleRate * 0.19f).toInt()
+    /** Several separated micro-impacts; no continuous hiss/noise bed. */
+    private fun buildLaunchCluster(): ShortArray {
+        val duration = 0.18f
+        val count = (sampleRate * duration).toInt()
+        val out = FloatArray(count)
+        val hitTimes = floatArrayOf(0.000f, 0.030f, 0.058f, 0.094f, 0.132f)
+        val hitStrengths = floatArrayOf(0.82f, 0.64f, 0.56f, 0.43f, 0.31f)
+
+        hitTimes.forEachIndexed { index, startSec ->
+            val start = (startSec * sampleRate).toInt()
+            val rnd = Random(700 + index * 19)
+            val f1 = 720f + index * 55f
+            val f2 = 1450f + index * 80f
+            val f3 = 2550f + index * 95f
+            val maxLen = (sampleRate * 0.050f).toInt()
+            for (j in 0 until maxLen) {
+                val pos = start + j
+                if (pos >= count) break
+                val t = j.toFloat() / sampleRate
+                val env = exp(-t * 52f)
+                val transient = if (j < 12) (rnd.nextFloat() * 2f - 1f) * (1f - j / 12f) * 0.22f else 0f
+                val ring =
+                    sin(2f * PI.toFloat() * f1 * t) * 0.34f +
+                    sin(2f * PI.toFloat() * f2 * t + 0.5f) * 0.21f +
+                    sin(2f * PI.toFloat() * f3 * t + 1.0f) * 0.11f
+                out[pos] += (transient + ring) * env * hitStrengths[index]
+            }
+        }
+
         return ShortArray(count) { i ->
-            val t = i.toFloat() / sampleRate
-            val env = exp(-t * 16f)
-            val rattle = (rnd.nextFloat() * 2f - 1f) * 0.25f
-            val body = sin(2f * PI.toFloat() * (115f + 90f * t) * t) * 0.18f
-            ((rattle + body) * env * 26000f).toInt().coerceIn(-32767, 32767).toShort()
+            (out[i].coerceIn(-1f, 1f) * 30000f).toInt().toShort()
         }
     }
 }
