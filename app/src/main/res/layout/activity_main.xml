@@ -35,24 +35,17 @@
         android:layout_margin="22dp"
         android:background="@drawable/arena_bg">
 
-        <TextView
-            android:id="@+id/die"
-            android:layout_width="150dp"
-            android:layout_height="150dp"
-            android:layout_gravity="center"
-            android:gravity="center"
-            android:text="⚄"
-            android:textColor="#111318"
-            android:textSize="112sp"
-            android:background="@drawable/die_bg"
-            android:elevation="18dp" />
+        <com.haseltonmediagroup.realdice3d.Dice3DView
+            android:id="@+id/dice3d"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
     </FrameLayout>
 
     <TextView
         android:id="@+id/resultText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="ROLL: 5"
+        android:text="ROLL: —"
         android:textColor="#FFFFFF"
         android:textSize="18sp"
         android:textStyle="bold" />
