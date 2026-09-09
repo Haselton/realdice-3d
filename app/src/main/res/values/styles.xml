@@ -1,0 +1,10 @@
+<resources>
+    <style name="Theme.RealDice3D" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">#090B10</item>
+        <item name="android:navigationBarColor">#090B10</item>
+        <item name="colorPrimary">#FFFFFF</item>
+        <item name="colorOnPrimary">#111318</item>
+    </style>
+</resources>
