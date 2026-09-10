@@ -27,6 +27,38 @@
         android:textSize="13sp"
         android:letterSpacing="0.08" />
 
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="8dp">
+
+        <Button
+            android:id="@+id/diceMinusButton"
+            android:layout_width="44dp"
+            android:layout_height="40dp"
+            android:text="−"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/diceCountText"
+            android:layout_width="96dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="2 DICE"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/dicePlusButton"
+            android:layout_width="44dp"
+            android:layout_height="40dp"
+            android:text="+"
+            android:textSize="18sp" />
+    </LinearLayout>
+
     <FrameLayout
         android:id="@+id/diceArena"
         android:layout_width="match_parent"
@@ -35,7 +67,7 @@
         android:layout_margin="22dp"
         android:background="@drawable/arena_bg">
 
-        <com.haseltonmediagroup.realdice3d.Dice3DView
+        <com.haseltonmediagroup.realdice3d.MultiDice3DView
             android:id="@+id/dice3d"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
