@@ -51,9 +51,9 @@ jobs:
           if n!=1: raise SystemExit('Could not replace buildRoundedCube')
           p.write_text(s2)
           PY
-      - name: Build installable test APK
-        run: gradle assembleDebug
+      - name: Build production app bundle
+        run: gradle bundleRelease
       - uses: actions/upload-artifact@v4
         with:
-          name: RealDice3D-installable-test
-          path: app/build/outputs/apk/debug/*.apk
+          name: RealDice3D-production-bundle
+          path: app/build/outputs/bundle/release/*.aab
