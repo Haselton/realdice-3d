@@ -111,5 +111,5 @@
         android:layout_marginTop="10dp"
         android:layout_marginBottom="10dp"
         ads:adSize="BANNER"
-        ads:adUnitId="ca-app-pub-3940256099942544/6300978111" />
+        ads:adUnitId="ca-app-pub-1051867648799965/3719574498" />
 </LinearLayout>

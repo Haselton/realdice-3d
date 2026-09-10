@@ -8,10 +8,10 @@
         android:icon="@drawable/ic_launcher"
         android:roundIcon="@drawable/ic_launcher"
         android:theme="@style/Theme.RealDice3D">
-        <!-- Google test App ID. Replace with HMG production AdMob App ID before release. -->
+        <!-- RealDice 3D production AdMob App ID. -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="ca-app-pub-1051867648799965~4405970202" />
         <activity
             android:name=".MainActivity"
             android:screenOrientation="portrait"
