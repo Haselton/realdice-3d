@@ -5,14 +5,14 @@ plugins {
 
 android {
     namespace = "com.haseltonmediagroup.realdice3d"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.haseltonmediagroup.realdice3d"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 4
-        versionName = "1.0.3"
+        targetSdk = 36
+        versionCode = 5
+        versionName = "1.0.4"
     }
 
     val uploadKeystore = providers.environmentVariable("REALDICE_KEYSTORE_PATH").orNull
