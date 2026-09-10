@@ -17,8 +17,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import com.google.android.gms.ads.AdRequest
-import com.google.android.gms.ads.MobileAds
 import com.haseltonmediagroup.realdice3d.databinding.ActivityMainBinding
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -28,6 +26,7 @@ import kotlin.math.max
 import kotlin.math.sqrt
 
 class MainActivity : AppCompatActivity(), SensorEventListener {
+    private lateinit var googleConsent: GoogleConsent
     private lateinit var binding: ActivityMainBinding
     private lateinit var sensorManager: SensorManager
     private lateinit var soundEngine: DiceSoundEngine
@@ -74,8 +73,8 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
         }
         ViewCompat.requestApplyInsets(binding.root)
 
-        MobileAds.initialize(this)
-        binding.adView.loadAd(AdRequest.Builder().build())
+        googleConsent = GoogleConsent(this, binding.adView)
+        googleConsent.update()
 
         soundEngine = DiceSoundEngine(this)
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
@@ -138,6 +137,7 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
         }
 
         if (!prefs.getBoolean("terms_accepted", false)) showLegal(true)
+        else googleConsent.allowForm()
     }
 
     private fun updateDiceCountUi() {
@@ -204,10 +204,16 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
             .apply {
                 if (firstLaunch) {
                     setCancelable(false)
-                    setPositiveButton("ACCEPT") { _, _ -> prefs.edit().putBoolean("terms_accepted", true).apply() }
+                    setPositiveButton("ACCEPT") { _, _ ->
+                        prefs.edit().putBoolean("terms_accepted", true).apply()
+                        googleConsent.allowForm()
+                    }
                     setNegativeButton("DECLINE") { _, _ -> finish() }
                 } else {
                     setPositiveButton("CLOSE", null)
+                    if (googleConsent.optionsRequired) {
+                        setNeutralButton("Privacy choices") { _, _ -> googleConsent.showOptions() }
+                    }
                 }
             }
             .create()
@@ -215,6 +221,9 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
         dialog.setOnShowListener {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(Color.BLACK)
             dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(Color.BLACK)
+            if (!firstLaunch && googleConsent.optionsRequired) {
+                dialog.getButton(AlertDialog.BUTTON_NEUTRAL)?.setTextColor(Color.BLACK)
+            }
         }
         dialog.show()
     }
@@ -247,6 +256,7 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
     }
 
     override fun onDestroy() {
+        googleConsent.destroy()
         soundEngine.release()
         super.onDestroy()
     }
