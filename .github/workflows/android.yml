@@ -47,7 +47,7 @@ jobs:
                     return floatArrayOf(qx+nx*radius,qy+ny*radius,qz+nz*radius) to floatArrayOf(nx,ny,nz)
                 }
                 fun add(p:FloatArray,n:FloatArray){positions.add(p[0]);positions.add(p[1]);positions.add(p[2]);normals.add(n[0]);normals.add(n[1]);normals.add(n[2])}
-                fun cross(a:FloatArray,b:FloatArray,c:FloatArray):FloatArray{val ux=b[0]-a[0];valuy=b[1]-a[1];valuz=b[2]-a[2];valvx=c[0]-a[0];valvy=c[1]-a[1];valvz=c[2]-a[2];return floatArrayOf(valuy*valvz-valuz*valvy,valuz*valvx-valux*valvz,valux*valvy-valuy*valvx)}
+                fun cross(a:FloatArray,b:FloatArray,c:FloatArray):FloatArray{val ux=b[0]-a[0];val uy=b[1]-a[1];valuz=b[2]-a[2];valvx=c[0]-a[0];valvy=c[1]-a[1];valvz=c[2]-a[2];return floatArrayOf(valuy*valvz-valuz*valvy,valuz*valvx-valux*valvz,valux*valvy-valuy*valvx)}
                 fun dot(a:FloatArray,b:FloatArray)=a[0]*b[0]+a[1]*b[1]+a[2]*b[2]
                 fun tri(a:Pair<FloatArray,FloatArray>,b:Pair<FloatArray,FloatArray>,c:Pair<FloatArray,FloatArray>,e:FloatArray){if(dot(cross(a.first,b.first,c.first),e)>=0f){add(a.first,a.second);add(b.first,b.second);add(c.first,c.second)}else{add(a.first,a.second);add(c.first,c.second);add(b.first,b.second)}}
                 data class FaceSpec(val axis:Int,val sign:Float,val expected:FloatArray)
@@ -58,14 +58,14 @@ jobs:
             }
 
             private fun circleOnPlane'''
-          # Keep existing source untouched if helper already compiles; no-op if pattern doesn't match.
           s2,n=re.subn(r'private fun buildRoundedCube\(.*?\n\s*private fun circleOnPlane',replacement,s,count=1,flags=re.S)
-          if n==1: p.write_text(s2)
+          if n!=1: raise SystemExit('Could not replace buildRoundedCube')
+          p.write_text(s2)
           PY
       - name: Build signed production app bundle
         run: gradle bundleRelease
-      - name: Verify AAB is signed
-        run: jarsigner -verify -verbose -certs app/build/outputs/bundle/release/*.aab
+      - name: Verify AAB signature
+        run: jarsigner -verify app/build/outputs/bundle/release/*.aab
       - uses: actions/upload-artifact@v4
         with:
           name: RealDice3D-signed-production-bundle
