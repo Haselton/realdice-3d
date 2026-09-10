@@ -9,6 +9,9 @@ import android.os.Bundle
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.view.MotionEvent
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -31,6 +34,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private var lastRoll = 0L
     private var lastHaptic = 0L
     private var touchY = 0f
+    private var diceCount = 2
 
     private val prefs by lazy { getSharedPreferences("realdice_prefs", Context.MODE_PRIVATE) }
 
@@ -76,6 +80,30 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
+        diceCount = prefs.getInt("dice_count", 2).coerceIn(1, 6)
+        updateDiceCountUi()
+        binding.dice3d.setDiceCount(diceCount)
+
+        binding.diceMinusButton.setOnClickListener {
+            if (diceCount > 1) {
+                diceCount--
+                prefs.edit().putInt("dice_count", diceCount).apply()
+                updateDiceCountUi()
+                binding.dice3d.setDiceCount(diceCount)
+                binding.resultText.text = "ROLL: —"
+            }
+        }
+
+        binding.dicePlusButton.setOnClickListener {
+            if (diceCount < 6) {
+                diceCount++
+                prefs.edit().putInt("dice_count", diceCount).apply()
+                updateDiceCountUi()
+                binding.dice3d.setDiceCount(diceCount)
+                binding.resultText.text = "ROLL: —"
+            }
+        }
+
         binding.dice3d.setOnImpactListener { strength ->
             soundEngine.playImpact(strength)
             if (strength >= 0.42f && System.currentTimeMillis() - lastHaptic > 85L) {
@@ -86,9 +114,14 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
             }
         }
 
-        binding.dice3d.setOnRollSettledListener { first, second ->
-            binding.resultText.text = "$first + $second = ${first + second}"
-            saveRoll(first, second)
+        binding.dice3d.setOnRollSettledListener { values ->
+            val sum = values.sum()
+            binding.resultText.text = if (values.size == 1) {
+                "ROLL: ${values.first()}"
+            } else {
+                values.joinToString(" + ") + " = $sum"
+            }
+            saveRoll(values)
         }
 
         binding.historyButton.setOnClickListener { showHistory() }
@@ -111,9 +144,16 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
         if (!prefs.getBoolean("terms_accepted", false)) showLegal(true)
     }
 
-    private fun saveRoll(first: Int, second: Int) {
+    private fun updateDiceCountUi() {
+        binding.diceCountText.text = if (diceCount == 1) "1 DIE" else "$diceCount DICE"
+        binding.diceMinusButton.isEnabled = diceCount > 1
+        binding.dicePlusButton.isEnabled = diceCount < 6
+    }
+
+    private fun saveRoll(values: List<Int>) {
         val time = SimpleDateFormat("MMM d, h:mm:ss a", Locale.getDefault()).format(Date())
-        val entry = "$time — $first + $second = ${first + second}"
+        val result = if (values.size == 1) values.first().toString() else values.joinToString(" + ") + " = ${values.sum()}"
+        val entry = "$time — ${values.size} ${if (values.size == 1) "die" else "dice"} — $result"
         val existing = prefs.getString("roll_history", "").orEmpty().lines().filter { it.isNotBlank() }
         val updated = (listOf(entry) + existing).take(100).joinToString("\n")
         prefs.edit().putString("roll_history", updated).apply()
@@ -121,19 +161,44 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
 
     private fun showHistory() {
         val history = prefs.getString("roll_history", "").orEmpty()
-        AlertDialog.Builder(this)
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            val p = (20 * resources.displayMetrics.density).toInt()
+            setPadding(p, p / 2, p, 0)
+        }
+        val historyText = TextView(this).apply {
+            text = if (history.isBlank()) "No rolls logged yet." else history
+            textSize = 15f
+            setTextColor(0xFFFFFFFF.toInt())
+            setTextIsSelectable(true)
+        }
+        val scroll = ScrollView(this).apply {
+            addView(historyText)
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (360 * resources.displayMetrics.density).toInt())
+        }
+        container.addView(scroll)
+
+        val dialog = AlertDialog.Builder(this)
             .setTitle("Roll History")
-            .setMessage(if (history.isBlank()) "No rolls logged yet." else history)
-            .setPositiveButton("Close", null)
-            .setNeutralButton("Clear") { _, _ ->
+            .setView(container)
+            .setNegativeButton("CLOSE", null)
+            .setPositiveButton("CLEAR HISTORY", null)
+            .create()
+
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 AlertDialog.Builder(this)
                     .setTitle("Clear roll history?")
                     .setMessage("This permanently removes the locally stored roll log on this device.")
-                    .setPositiveButton("Clear") { _, _ -> prefs.edit().remove("roll_history").apply() }
-                    .setNegativeButton("Cancel", null)
+                    .setPositiveButton("CLEAR") { _, _ ->
+                        prefs.edit().remove("roll_history").apply()
+                        historyText.text = "No rolls logged yet."
+                    }
+                    .setNegativeButton("CANCEL", null)
                     .show()
             }
-            .show()
+        }
+        dialog.show()
     }
 
     private fun showLegal(firstLaunch: Boolean) {
