@@ -16,6 +16,8 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.MobileAds
 import com.haseltonmediagroup.realdice3d.databinding.ActivityMainBinding
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -28,7 +30,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var binding: ActivityMainBinding
     private lateinit var sensorManager: SensorManager
     private lateinit var soundEngine: DiceSoundEngine
-    private lateinit var googleConsent: GoogleConsent
     private var accelerometer: Sensor? = null
     private var lastRoll = 0L
     private var lastHaptic = 0L
@@ -72,7 +73,8 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
         }
         ViewCompat.requestApplyInsets(binding.root)
 
-        googleConsent = GoogleConsent(this, binding.adView)
+        MobileAds.initialize(this)
+        binding.adView.loadAd(AdRequest.Builder().build())
 
         soundEngine = DiceSoundEngine(this)
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
@@ -140,7 +142,6 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
         }
 
         if (!prefs.getBoolean("terms_accepted", false)) showLegal(true)
-        else googleConsent.start()
     }
 
     private fun updateDiceCountUi() {
@@ -207,16 +208,10 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
 
         if (firstLaunch) {
             builder.setCancelable(false)
-                .setPositiveButton("ACCEPT") { _, _ ->
-                    prefs.edit().putBoolean("terms_accepted", true).apply()
-                    googleConsent.start()
-                }
+                .setPositiveButton("ACCEPT") { _, _ -> prefs.edit().putBoolean("terms_accepted", true).apply() }
                 .setNegativeButton("DECLINE") { _, _ -> finish() }
         } else {
             builder.setPositiveButton("Close", null)
-            if (googleConsent.optionsRequired) {
-                builder.setNeutralButton("Privacy choices") { _, _ -> googleConsent.showOptions() }
-            }
         }
         builder.show()
     }
@@ -251,7 +246,6 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
     }
 
     override fun onDestroy() {
-        googleConsent.destroy()
         soundEngine.release()
         super.onDestroy()
     }
