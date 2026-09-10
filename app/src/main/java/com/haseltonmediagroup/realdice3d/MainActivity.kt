@@ -2,6 +2,7 @@ package com.haseltonmediagroup.realdice3d
 
 import android.content.Context
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -155,46 +156,53 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
         prefs.edit().putString("roll_history", updated).apply()
     }
 
-    private fun resolveDialogTextColor(): Int {
-        val attrs = obtainStyledAttributes(intArrayOf(android.R.attr.textColorPrimary))
-        return try {
-            attrs.getColor(0, Color.WHITE)
-        } finally {
-            attrs.recycle()
-        }
-    }
-
     private fun showHistory() {
         val history = prefs.getString("roll_history", "").orEmpty()
-        val dialogTextColor = resolveDialogTextColor()
+        val darkBackground = Color.rgb(72, 72, 72)
+        val density = resources.displayMetrics.density
+        val p = (20 * density).toInt()
+
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            val p = (20 * resources.displayMetrics.density).toInt()
-            setPadding(p, p / 2, p, 0)
+            setPadding(p, p, p, 0)
+            setBackgroundColor(darkBackground)
         }
+
+        val title = TextView(this).apply {
+            text = "Roll History"
+            textSize = 24f
+            setTextColor(Color.WHITE)
+            setPadding(0, 0, 0, (16 * density).toInt())
+        }
+        container.addView(title)
+
         val historyText = TextView(this).apply {
             text = if (history.isBlank()) "No rolls logged yet." else history
             textSize = 15f
-            setTextColor(dialogTextColor)
+            setTextColor(Color.WHITE)
             setTextIsSelectable(true)
         }
+
         val scroll = ScrollView(this).apply {
             addView(historyText)
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (360 * resources.displayMetrics.density).toInt())
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                (360 * density).toInt()
+            )
         }
         container.addView(scroll)
 
         val dialog = AlertDialog.Builder(this)
-            .setTitle("Roll History")
             .setView(container)
             .setNegativeButton("CLOSE", null)
             .setPositiveButton("CLEAR HISTORY", null)
             .create()
 
         dialog.setOnShowListener {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(dialogTextColor)
-            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(dialogTextColor)
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            dialog.window?.setBackgroundDrawable(ColorDrawable(darkBackground))
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(Color.WHITE)
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(Color.WHITE)
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setOnClickListener {
                 AlertDialog.Builder(this)
                     .setTitle("Clear roll history?")
                     .setMessage("This permanently removes the locally stored roll log on this device.")
