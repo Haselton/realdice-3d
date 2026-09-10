@@ -170,7 +170,7 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
         val historyText = TextView(this).apply {
             text = if (history.isBlank()) "No rolls logged yet." else history
             textSize = 15f
-            setTextColor(Color.WHITE)
+            setTextColor(Color.BLACK)
             setTextIsSelectable(true)
         }
         val scroll = ScrollView(this).apply {
@@ -187,8 +187,8 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
             .create()
 
         dialog.setOnShowListener {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.WHITE)
-            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(Color.WHITE)
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.BLACK)
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(Color.BLACK)
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 AlertDialog.Builder(this)
                     .setTitle("Clear roll history?")
@@ -220,8 +220,8 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
             .create()
 
         dialog.setOnShowListener {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(Color.WHITE)
-            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(Color.WHITE)
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(Color.BLACK)
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(Color.BLACK)
         }
         dialog.show()
     }
