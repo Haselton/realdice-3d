@@ -117,11 +117,7 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
 
         binding.dice3d.setOnRollSettledListener { values ->
             val sum = values.sum()
-            binding.resultText.text = if (values.size == 1) {
-                "ROLL: ${values.first()}"
-            } else {
-                values.joinToString(" + ") + " = $sum"
-            }
+            binding.resultText.text = if (values.size == 1) "ROLL: ${values.first()}" else values.joinToString(" + ") + " = $sum"
             saveRoll(values)
         }
 
@@ -134,8 +130,7 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
                 MotionEvent.ACTION_DOWN -> { touchY = event.y; true }
                 MotionEvent.ACTION_UP -> {
                     val flick = touchY - event.y
-                    if (abs(flick) > 90f) rollDice((abs(flick) / 420f).coerceIn(0.85f, 2.4f))
-                    else rollDice(0.85f)
+                    if (abs(flick) > 90f) rollDice((abs(flick) / 420f).coerceIn(0.85f, 2.4f)) else rollDice(0.85f)
                     true
                 }
                 else -> true
@@ -170,7 +165,7 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
         val historyText = TextView(this).apply {
             text = if (history.isBlank()) "No rolls logged yet." else history
             textSize = 15f
-            setTextColor(Color.BLACK)
+            setTextColor(0xFFFFFFFF.toInt())
             setTextIsSelectable(true)
         }
         val scroll = ScrollView(this).apply {
@@ -187,8 +182,6 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
             .create()
 
         dialog.setOnShowListener {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.BLACK)
-            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(Color.BLACK)
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 AlertDialog.Builder(this)
                     .setTitle("Clear roll history?")
@@ -239,9 +232,7 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
     }
 
     override fun onSensorChanged(event: SensorEvent) {
-        val x = event.values[0]
-        val y = event.values[1]
-        val z = event.values[2]
+        val x = event.values[0]; val y = event.values[1]; val z = event.values[2]
         val g = sqrt(x * x + y * y + z * z) / SensorManager.GRAVITY_EARTH
         if (g > 2.35f && System.currentTimeMillis() - lastRoll > 800L) rollDice(g.coerceAtMost(3.2f))
     }
