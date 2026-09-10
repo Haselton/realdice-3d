@@ -155,8 +155,18 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
         prefs.edit().putString("roll_history", updated).apply()
     }
 
+    private fun resolveDialogTextColor(): Int {
+        val attrs = obtainStyledAttributes(intArrayOf(android.R.attr.textColorPrimary))
+        return try {
+            attrs.getColor(0, Color.WHITE)
+        } finally {
+            attrs.recycle()
+        }
+    }
+
     private fun showHistory() {
         val history = prefs.getString("roll_history", "").orEmpty()
+        val dialogTextColor = resolveDialogTextColor()
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             val p = (20 * resources.displayMetrics.density).toInt()
@@ -165,7 +175,7 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
         val historyText = TextView(this).apply {
             text = if (history.isBlank()) "No rolls logged yet." else history
             textSize = 15f
-            setTextColor(0xFFFFFFFF.toInt())
+            setTextColor(dialogTextColor)
             setTextIsSelectable(true)
         }
         val scroll = ScrollView(this).apply {
@@ -182,6 +192,8 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
             .create()
 
         dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(dialogTextColor)
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(dialogTextColor)
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 AlertDialog.Builder(this)
                     .setTitle("Clear roll history?")
