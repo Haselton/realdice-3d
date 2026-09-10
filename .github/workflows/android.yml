@@ -47,7 +47,7 @@ jobs:
                     return floatArrayOf(qx+nx*radius,qy+ny*radius,qz+nz*radius) to floatArrayOf(nx,ny,nz)
                 }
                 fun add(p:FloatArray,n:FloatArray){positions.add(p[0]);positions.add(p[1]);positions.add(p[2]);normals.add(n[0]);normals.add(n[1]);normals.add(n[2])}
-                fun cross(a:FloatArray,b:FloatArray,c:FloatArray):FloatArray{val ux=b[0]-a[0];val uy=b[1]-a[1];valuz=b[2]-a[2];valvx=c[0]-a[0];valvy=c[1]-a[1];valvz=c[2]-a[2];return floatArrayOf(valuy*valvz-valuz*valvy,valuz*valvx-valux*valvz,valux*valvy-valuy*valvx)}
+                fun cross(a:FloatArray,b:FloatArray,c:FloatArray):FloatArray{val ux=b[0]-a[0];val uy=b[1]-a[1];val uz=b[2]-a[2];val vx=c[0]-a[0];val vy=c[1]-a[1];val vz=c[2]-a[2];return floatArrayOf(uy*vz-uz*vy,uz*vx-ux*vz,ux*vy-uy*vx)}
                 fun dot(a:FloatArray,b:FloatArray)=a[0]*b[0]+a[1]*b[1]+a[2]*b[2]
                 fun tri(a:Pair<FloatArray,FloatArray>,b:Pair<FloatArray,FloatArray>,c:Pair<FloatArray,FloatArray>,e:FloatArray){if(dot(cross(a.first,b.first,c.first),e)>=0f){add(a.first,a.second);add(b.first,b.second);add(c.first,c.second)}else{add(a.first,a.second);add(c.first,c.second);add(b.first,b.second)}}
                 data class FaceSpec(val axis:Int,val sign:Float,val expected:FloatArray)
