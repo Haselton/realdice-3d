@@ -1,6 +1,7 @@
 package com.haseltonmediagroup.realdice3d
 
 import android.content.Context
+import android.graphics.Color
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -169,7 +170,7 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
         val historyText = TextView(this).apply {
             text = if (history.isBlank()) "No rolls logged yet." else history
             textSize = 15f
-            setTextColor(0xFFFFFFFF.toInt())
+            setTextColor(Color.WHITE)
             setTextIsSelectable(true)
         }
         val scroll = ScrollView(this).apply {
@@ -186,6 +187,8 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
             .create()
 
         dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.WHITE)
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(Color.WHITE)
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 AlertDialog.Builder(this)
                     .setTitle("Clear roll history?")
@@ -202,18 +205,25 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
     }
 
     private fun showLegal(firstLaunch: Boolean) {
-        val builder = AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this)
             .setTitle(if (firstLaunch) "Terms of Use" else "Legal & Fairness")
             .setMessage(legalText)
+            .apply {
+                if (firstLaunch) {
+                    setCancelable(false)
+                    setPositiveButton("ACCEPT") { _, _ -> prefs.edit().putBoolean("terms_accepted", true).apply() }
+                    setNegativeButton("DECLINE") { _, _ -> finish() }
+                } else {
+                    setPositiveButton("CLOSE", null)
+                }
+            }
+            .create()
 
-        if (firstLaunch) {
-            builder.setCancelable(false)
-                .setPositiveButton("ACCEPT") { _, _ -> prefs.edit().putBoolean("terms_accepted", true).apply() }
-                .setNegativeButton("DECLINE") { _, _ -> finish() }
-        } else {
-            builder.setPositiveButton("Close", null)
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(Color.WHITE)
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(Color.WHITE)
         }
-        builder.show()
+        dialog.show()
     }
 
     override fun onResume() {
