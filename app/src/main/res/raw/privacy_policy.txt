@@ -6,7 +6,7 @@ RealDice 3D is provided by Haselton Media Group LLC. This policy explains how in
 
 Accounts and app data
 
-RealDice 3D does not require an account or a login. The app stores your selected number of dice, acceptance of its terms, advertising age-group choice, and up to 100 recent roll-history entries in private app storage on your device. Google's privacy SDK may also store consent preferences locally. History entries include the time, number of dice, and results. Clear History removes the history saved by the app. Clearing the app's storage removes its saved preferences and history.
+RealDice 3D does not require an account or a login. The app stores your selected number of dice, acceptance of its terms, and up to 100 recent roll-history entries in private app storage on your device. Google's privacy SDK may also store consent preferences locally. History entries include the time, number of dice, and results. Clear History removes the history saved by the app. Clearing the app's storage removes its saved preferences and history.
 
 The app permits Android backup. Depending on your Android settings, app preferences and history may be included in operating-system backups or device transfers. Those copies are managed by your device or backup provider; clearing history in the app does not directly delete an existing backup.
 
@@ -26,11 +26,11 @@ Privacy choices
 
 You can reset or delete your advertising ID using the controls available in your Android settings. Google also provides advertising controls at https://myadcenter.google.com/. Availability depends on your device and account.
 
-On first setup, an advertising-privacy prompt lets you choose “Under 18” or “18 or older.” Both groups have the same dice features. We store only the selected category locally, not a birth date. You can change the category through Legal → Privacy → Change advertising age group.
+The app does not ask for your age or date of birth. Any age-group choice saved by an earlier version is removed when this version starts. The dice features are available independently of advertising privacy choices.
 
-For “Under 18,” the app applies conservative under-age-of-consent treatment and explicitly requests non-personalized ads with restricted data processing. It can request eligible restricted ads after this choice without an adult consent dialog. For “18 or older,” Google's User Messaging Platform handles applicable regional consent and privacy choices; ads are requested only when that SDK permits them. You can revisit applicable adult consent choices through Legal → Privacy → Advertising privacy choices. Requested ad content is limited to Google's general-audience category for both groups. Ad availability is not guaranteed, and the dice remain usable if ads or consent services are unavailable.
+The app requests non-personalized ads with restricted data processing for all users and limits requested ad content to Google's general-audience category. Google's User Messaging Platform handles applicable regional consent and privacy choices. Ads are requested only when that SDK permits them. You can revisit applicable choices through Legal → Privacy → Advertising privacy choices. Ad availability is not guaranteed, and dice remain usable if ads or consent services are unavailable.
 
-For troubleshooting, the app writes the selected age category, consent status, advertising initialization state and ad-load success or error details to Android's local diagnostic log. The app does not upload these diagnostic logs to Haselton Media Group LLC. Device debugging tools may access them; avoid sharing logs publicly.
+For troubleshooting, the app writes consent status, advertising initialization state and ad-load success or error details to Android's local diagnostic log. The latest status is visible under Legal → Privacy → Advertising status. The app does not upload these logs to Haselton Media Group LLC. Device debugging tools may access them; avoid sharing logs publicly.
 
 RealDice 3D is designed for teens and adults and is not directed to children under 13. If you believe a child has provided personal information to us, contact us using the address below.
 

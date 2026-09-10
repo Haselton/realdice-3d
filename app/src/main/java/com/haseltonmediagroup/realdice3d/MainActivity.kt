@@ -220,7 +220,7 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
     }
 
     private fun showPrivacy() {
-        val choices = mutableListOf("Privacy policy", "Change advertising age group")
+        val choices = mutableListOf("Privacy policy", "Advertising status")
         if (advertisingPrivacy.optionsRequired) choices.add("Advertising privacy choices")
         AlertDialog.Builder(this)
             .setTitle("Privacy")
@@ -230,7 +230,7 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
                         .setTitle("RealDice 3D Privacy Policy")
                         .setMessage(resources.openRawResource(R.raw.privacy_policy).bufferedReader().use { it.readText() })
                         .setPositiveButton("CLOSE", null).show()
-                    1 -> advertisingPrivacy.changeAgeGroup()
+                    1 -> advertisingPrivacy.showDiagnostics()
                     2 -> advertisingPrivacy.showOptions()
                 }
             }

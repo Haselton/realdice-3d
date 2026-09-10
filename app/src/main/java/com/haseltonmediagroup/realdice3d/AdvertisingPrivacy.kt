@@ -24,77 +24,54 @@ class AdvertisingPrivacy(private val activity: AppCompatActivity, private val ad
     private var disposed = false
     private var flowStarted = false
     private var privacyComplete = false
-    private var under18 = true
+    private var diagnostic = "Advertising privacy check has not started."
     private val active: Boolean
         get() = !disposed && !activity.isFinishing && !activity.isDestroyed
 
     init {
         adView.adListener = object : AdListener() {
-            override fun onAdLoaded() { Log.i(TAG, "banner_load_success") }
+            override fun onAdLoaded() { record("Banner loaded successfully.") }
             override fun onAdFailedToLoad(error: LoadAdError) {
+                record("Banner failed: code=${error.code}\ndomain=${error.domain}\n${error.message}")
                 Log.e(TAG, "banner_load_failure code=${error.code} domain=${error.domain} message=${error.message}")
             }
         }
     }
 
     val optionsRequired: Boolean
-        get() = preferences.contains("under_18") && !preferences.getBoolean("under_18", true) &&
-            consent.privacyOptionsRequirementStatus ==
+        get() = consent.privacyOptionsRequirementStatus ==
             ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED
 
     fun start() {
         if (!active || flowStarted) return
         flowStarted = true
-        if (!preferences.contains("under_18")) {
-            AlertDialog.Builder(activity)
-                .setTitle("Advertising privacy")
-                .setMessage("Select your age group so we can apply the appropriate advertising privacy settings. We save only this choice on your device, not your date of birth. Your choice does not affect dice results.")
-                // Buttons keep both choices visible alongside the explanatory message.
-                .setNegativeButton("Under 18") { _, _ -> selectAge(true) }
-                .setPositiveButton("18 or older") { _, _ -> selectAge(false) }
-                .setCancelable(false)
-                .show()
-        } else {
-            gatherConsent()
-        }
-    }
-
-    private fun selectAge(isUnder18: Boolean) {
-        preferences.edit().putBoolean("under_18", isUnder18).apply()
+        // Remove the old local age category; the app no longer asks for or uses it.
+        preferences.edit().remove("under_18").apply()
         gatherConsent()
     }
 
     private fun gatherConsent() {
         if (!active) return
-        under18 = preferences.getBoolean("under_18", true)
-        Log.i(TAG, "age_group=${if (under18) "under_18" else "18_or_older"}")
+        record("Checking Google advertising privacy requirements. No age selection is requested.")
         Log.i(TAG, "mobile_ads_initialization_callback_pending=true")
         MobileAds.setRequestConfiguration(
             RequestConfiguration.Builder()
                 .setMaxAdContentRating(RequestConfiguration.MAX_AD_CONTENT_RATING_G)
-                .setTagForUnderAgeOfConsent(if (under18)
-                    RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_TRUE
-                else RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_FALSE)
+                .setTagForUnderAgeOfConsent(RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_UNSPECIFIED)
                 .build()
         )
-        if (under18) {
-            // SDK 23.6 supports TFUA: conservative restricted treatment, no AAID or
-            // personalized ads. This is not a declaration that the app targets children.
-            // Do not wait on an adult UMP consent status for this restricted path.
-            privacyComplete = true
-            logConsent("restricted_path_no_consent_form")
-            startAdsIfAllowed()
-            return
-        }
         val parameters = ConsentRequestParameters.Builder()
-            .setTagForUnderAgeOfConsent(false)
             .build()
         consent.requestConsentInfoUpdate(activity, parameters, {
             if (active) {
                 logConsent("update_success")
                 UserMessagingPlatform.loadAndShowConsentFormIfRequired(activity) { error ->
                     if (!active) return@loadAndShowConsentFormIfRequired
-                    if (error != null) Log.w(TAG, "consent_form_error code=${error.errorCode} message=${error.message}")
+                    if (error != null) {
+                        record("Google privacy form failed: code=${error.errorCode}\n${error.message}")
+                    } else {
+                        record("Google privacy flow completed. Ad requests permitted: ${consent.canRequestAds()}")
+                    }
                     privacyComplete = true
                     logConsent("form_complete")
                     startAdsIfAllowed()
@@ -103,6 +80,7 @@ class AdvertisingPrivacy(private val activity: AppCompatActivity, private val ad
         }, { error ->
             if (!active) return@requestConsentInfoUpdate
             Log.w(TAG, "consent_update_error code=${error.errorCode} message=${error.message}")
+            record("Google privacy update failed: code=${error.errorCode}\n${error.message}")
             // UMP may still permit ads using a valid choice from a previous session.
             privacyComplete = true
             logConsent("update_error")
@@ -111,27 +89,25 @@ class AdvertisingPrivacy(private val activity: AppCompatActivity, private val ad
     }
 
     private fun startAdsIfAllowed() {
-        if (!active || adsStarted || !preferences.contains("under_18")) return
-        if (!privacyComplete || (!under18 && !consent.canRequestAds())) {
+        if (!active || adsStarted) return
+        if (!privacyComplete || !consent.canRequestAds()) {
             Log.i(TAG, "banner_waiting_for_privacy")
             return
         }
         adsStarted = true
-        Log.i(TAG, "mobile_ads_initialization_started")
+        record("Google privacy permits ads. Initializing Mobile Ads.")
         MobileAds.initialize(activity) {
             activity.runOnUiThread {
                 Log.i(TAG, "mobile_ads_initialized=true")
-                if (active && privacyComplete && (under18 || consent.canRequestAds())) {
+                if (active && privacyComplete && consent.canRequestAds()) {
                     val request = AdRequest.Builder()
-                    if (under18) {
-                        // Explicitly request NPA plus restricted data processing for US states.
-                        val extras = Bundle().apply {
-                            putString("npa", "1")
-                            putInt("rdp", 1)
-                        }
-                        request.addNetworkExtrasBundle(AdMobAdapter::class.java, extras)
+                    // No age profiling: request non-personalized, restricted ads for everyone.
+                    val extras = Bundle().apply {
+                        putString("npa", "1")
+                        putInt("rdp", 1)
                     }
-                    Log.i(TAG, "banner_load_requested restricted=$under18")
+                    request.addNetworkExtrasBundle(AdMobAdapter::class.java, extras)
+                    record("Mobile Ads initialized. Banner request sent (non-personalized / restricted).")
                     adView.loadAd(request.build())
                 }
             }
@@ -157,19 +133,22 @@ class AdvertisingPrivacy(private val activity: AppCompatActivity, private val ad
         }
     }
 
-    fun changeAgeGroup() {
-        Log.i(TAG, "age_group_change_requested")
-        disposed = true
-        adView.destroy()
-        preferences.edit().remove("under_18").apply()
-        activity.recreate()
+    fun showDiagnostics() {
+        AlertDialog.Builder(activity)
+            .setTitle("Advertising status — 1.0.2 (3)")
+            .setMessage("$diagnostic\n\nGoogle consent status: ${consent.consentStatus}\nGoogle permits ad requests: ${consent.canRequestAds()}\nBanner area: ${adView.width} × ${adView.height}px\n\nAdMob approval and available inventory also affect ad delivery.")
+            .setPositiveButton("CLOSE", null)
+            .setNeutralButton("RETRY") { _, _ -> activity.recreate() }
+            .show()
     }
 
     fun destroy() { disposed = true; adView.destroy() }
 
     private fun logConsent(stage: String) {
-        Log.i(TAG, "consent stage=$stage status=${consent.consentStatus} canRequestAds=${consent.canRequestAds()} restricted=$under18")
+        Log.i(TAG, "consent stage=$stage status=${consent.consentStatus} canRequestAds=${consent.canRequestAds()}")
     }
+
+    private fun record(message: String) { diagnostic = message; Log.i(TAG, message) }
 
     companion object { private const val TAG = "RealDiceAds" }
 }
