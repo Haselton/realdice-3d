@@ -203,7 +203,7 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
             dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(Color.WHITE)
             dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(Color.WHITE)
             dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setOnClickListener {
-                AlertDialog.Builder(this)
+                val confirmDialog = AlertDialog.Builder(this)
                     .setTitle("Clear roll history?")
                     .setMessage("This permanently removes the locally stored roll log on this device.")
                     .setPositiveButton("CLEAR") { _, _ ->
@@ -211,7 +211,13 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
                         historyText.text = "No rolls logged yet."
                     }
                     .setNegativeButton("CANCEL", null)
-                    .show()
+                    .create()
+
+                confirmDialog.setOnShowListener {
+                    confirmDialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(Color.BLACK)
+                    confirmDialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(Color.BLACK)
+                }
+                confirmDialog.show()
             }
         }
         dialog.show()
