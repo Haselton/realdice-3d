@@ -17,13 +17,16 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Fix Kotlin nested-if parser ambiguity
+      - name: Fix MultiDice Kotlin syntax
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p = Path('app/src/main/java/com/haseltonmediagroup/realdice3d/MultiDice3DView.kt')
           s = p.read_text()
-          s = s.replace('dx=if(x>=0)1f else -1f else if(ay>=ax&&ay>=az)dy=if(y>=0)1f else -1f else dz=if(z>=0)1f else -1f', 'dx=(if(x>=0)1f else -1f) else if(ay>=ax&&ay>=az)dy=(if(y>=0)1f else -1f) else dz=(if(z>=0)1f else -1f)')
+          original = 'if(ax>=ay&&ax>=az)dx=if(x>=0)1f else -1f else if(ay>=ax&&ay>=az)dy=if(y>=0)1f else -1f else dz=if(z>=0)1f else -1f'
+          patched = 'if(ax>=ay&&ax>=az)dx=(if(x>=0)1f else -1f) else if(ay>=ax&&ay>=az)dy=(if(y>=0)1f else -1f) else dz=(if(z>=0)1f else -1f)'
+          fixed = 'if(ax>=ay&&ax>=az){dx=if(x>=0)1f else -1f}else if(ay>=ax&&ay>=az){dy=if(y>=0)1f else -1f}else{dz=if(z>=0)1f else -1f}'
+          s = s.replace(original, fixed).replace(patched, fixed)
           p.write_text(s)
           PY
       - name: Build debug APK
