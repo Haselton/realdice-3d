@@ -17,17 +17,106 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Fix MultiDice Kotlin syntax
+      - name: Repair MultiDice rounded-cube helper
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
           p = Path('app/src/main/java/com/haseltonmediagroup/realdice3d/MultiDice3DView.kt')
           s = p.read_text()
-          original = 'if(ax>=ay&&ax>=az)dx=if(x>=0)1f else -1f else if(ay>=ax&&ay>=az)dy=if(y>=0)1f else -1f else dz=if(z>=0)1f else -1f'
-          patched = 'if(ax>=ay&&ax>=az)dx=(if(x>=0)1f else -1f) else if(ay>=ax&&ay>=az)dy=(if(y>=0)1f else -1f) else dz=(if(z>=0)1f else -1f)'
-          fixed = 'if(ax>=ay&&ax>=az){dx=if(x>=0)1f else -1f}else if(ay>=ax&&ay>=az){dy=if(y>=0)1f else -1f}else{dz=if(z>=0)1f else -1f}'
-          s = s.replace(original, fixed).replace(patched, fixed)
-          p.write_text(s)
+          replacement = r'''private fun buildRoundedCube(subdivisions: Int, radius: Float): Pair<FloatArray, FloatArray> {
+                val positions = ArrayList<Float>()
+                val normals = ArrayList<Float>()
+                val inner = 1f - radius
+
+                fun roundedPoint(x: Float, y: Float, z: Float): Pair<FloatArray, FloatArray> {
+                    val qx = x.coerceIn(-inner, inner)
+                    val qy = y.coerceIn(-inner, inner)
+                    val qz = z.coerceIn(-inner, inner)
+                    var dx = x - qx
+                    var dy = y - qy
+                    var dz = z - qz
+                    var len = sqrt(dx*dx + dy*dy + dz*dz)
+                    if (len < 0.00001f) {
+                        val ax = abs(x)
+                        val ay = abs(y)
+                        val az = abs(z)
+                        if (ax >= ay && ax >= az) {
+                            dx = if (x >= 0f) 1f else -1f
+                        } else if (ay >= ax && ay >= az) {
+                            dy = if (y >= 0f) 1f else -1f
+                        } else {
+                            dz = if (z >= 0f) 1f else -1f
+                        }
+                        len = 1f
+                    }
+                    val nx = dx / len
+                    val ny = dy / len
+                    val nz = dz / len
+                    return floatArrayOf(qx + nx*radius, qy + ny*radius, qz + nz*radius) to floatArrayOf(nx, ny, nz)
+                }
+
+                fun add(p: FloatArray, n: FloatArray) {
+                    positions.add(p[0]); positions.add(p[1]); positions.add(p[2])
+                    normals.add(n[0]); normals.add(n[1]); normals.add(n[2])
+                }
+
+                fun cross(a: FloatArray, b: FloatArray, c: FloatArray): FloatArray {
+                    val ux = b[0]-a[0]; val uy = b[1]-a[1]; val uz = b[2]-a[2]
+                    val vx = c[0]-a[0]; val vy = c[1]-a[1]; val vz = c[2]-a[2]
+                    return floatArrayOf(uy*vz-uz*vy, uz*vx-ux*vz, ux*vy-uy*vx)
+                }
+
+                fun dot(a: FloatArray, b: FloatArray) = a[0]*b[0] + a[1]*b[1] + a[2]*b[2]
+
+                fun tri(a: Pair<FloatArray,FloatArray>, b: Pair<FloatArray,FloatArray>, c: Pair<FloatArray,FloatArray>, expected: FloatArray) {
+                    if (dot(cross(a.first,b.first,c.first), expected) >= 0f) {
+                        add(a.first,a.second); add(b.first,b.second); add(c.first,c.second)
+                    } else {
+                        add(a.first,a.second); add(c.first,c.second); add(b.first,b.second)
+                    }
+                }
+
+                data class FaceSpec(val axis: Int, val sign: Float, val expected: FloatArray)
+                val specs = listOf(
+                    FaceSpec(0,1f,floatArrayOf(1f,0f,0f)), FaceSpec(0,-1f,floatArrayOf(-1f,0f,0f)),
+                    FaceSpec(1,1f,floatArrayOf(0f,1f,0f)), FaceSpec(1,-1f,floatArrayOf(0f,-1f,0f)),
+                    FaceSpec(2,1f,floatArrayOf(0f,0f,1f)), FaceSpec(2,-1f,floatArrayOf(0f,0f,-1f))
+                )
+
+                fun raw(spec: FaceSpec, u: Float, v: Float): Pair<FloatArray,FloatArray> {
+                    val p = when (spec.axis) {
+                        0 -> floatArrayOf(spec.sign,u,v)
+                        1 -> floatArrayOf(u,spec.sign,v)
+                        else -> floatArrayOf(u,v,spec.sign)
+                    }
+                    return roundedPoint(p[0],p[1],p[2])
+                }
+
+                for (spec in specs) {
+                    for (iy in 0 until subdivisions) {
+                        val v0 = -1f + 2f*iy/subdivisions
+                        val v1 = -1f + 2f*(iy+1)/subdivisions
+                        for (ix in 0 until subdivisions) {
+                            val u0 = -1f + 2f*ix/subdivisions
+                            val u1 = -1f + 2f*(ix+1)/subdivisions
+                            val p00 = raw(spec,u0,v0)
+                            val p10 = raw(spec,u1,v0)
+                            val p11 = raw(spec,u1,v1)
+                            val p01 = raw(spec,u0,v1)
+                            tri(p00,p10,p11,spec.expected)
+                            tri(p00,p11,p01,spec.expected)
+                        }
+                    }
+                }
+                return positions.toFloatArray() to normals.toFloatArray()
+            }
+
+            private fun circleOnPlane'''
+          s2, n = re.subn(r'private fun buildRoundedCube\(.*?\n\s*private fun circleOnPlane', replacement, s, count=1, flags=re.S)
+          if n != 1:
+              raise SystemExit('Could not replace buildRoundedCube')
+          p.write_text(s2)
           PY
       - name: Build debug APK
         run: gradle assembleDebug
