@@ -16,8 +16,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import com.google.android.gms.ads.AdRequest
-import com.google.android.gms.ads.MobileAds
 import com.haseltonmediagroup.realdice3d.databinding.ActivityMainBinding
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -30,6 +28,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var binding: ActivityMainBinding
     private lateinit var sensorManager: SensorManager
     private lateinit var soundEngine: DiceSoundEngine
+    private lateinit var advertisingPrivacy: AdvertisingPrivacy
     private var accelerometer: Sensor? = null
     private var lastRoll = 0L
     private var lastHaptic = 0L
@@ -67,14 +66,13 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
         setContentView(binding.root)
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
-            val nav = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
-            view.setPadding(view.paddingLeft, view.paddingTop, view.paddingRight, max(view.paddingBottom, nav.bottom))
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
+            view.setPadding(max(view.paddingLeft, bars.left), max(view.paddingTop, bars.top), max(view.paddingRight, bars.right), max(view.paddingBottom, bars.bottom))
             insets
         }
         ViewCompat.requestApplyInsets(binding.root)
 
-        MobileAds.initialize(this)
-        binding.adView.loadAd(AdRequest.Builder().build())
+        advertisingPrivacy = AdvertisingPrivacy(this, binding.adView)
 
         soundEngine = DiceSoundEngine(this)
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
@@ -142,6 +140,7 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
         }
 
         if (!prefs.getBoolean("terms_accepted", false)) showLegal(true)
+        else advertisingPrivacy.start()
     }
 
     private fun updateDiceCountUi() {
@@ -208,23 +207,48 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
 
         if (firstLaunch) {
             builder.setCancelable(false)
-                .setPositiveButton("ACCEPT") { _, _ -> prefs.edit().putBoolean("terms_accepted", true).apply() }
+                .setPositiveButton("ACCEPT") { _, _ ->
+                    prefs.edit().putBoolean("terms_accepted", true).apply()
+                    advertisingPrivacy.start()
+                }
                 .setNegativeButton("DECLINE") { _, _ -> finish() }
         } else {
             builder.setPositiveButton("Close", null)
+                .setNeutralButton("PRIVACY") { _, _ -> showPrivacy() }
         }
         builder.show()
+    }
+
+    private fun showPrivacy() {
+        val choices = mutableListOf("Privacy policy", "Change advertising age group")
+        if (advertisingPrivacy.optionsRequired) choices.add("Advertising privacy choices")
+        AlertDialog.Builder(this)
+            .setTitle("Privacy")
+            .setItems(choices.toTypedArray()) { _, which ->
+                when (which) {
+                    0 -> AlertDialog.Builder(this)
+                        .setTitle("RealDice 3D Privacy Policy")
+                        .setMessage(resources.openRawResource(R.raw.privacy_policy).bufferedReader().use { it.readText() })
+                        .setPositiveButton("CLOSE", null).show()
+                    1 -> advertisingPrivacy.changeAgeGroup()
+                    2 -> advertisingPrivacy.showOptions()
+                }
+            }
+            .setNegativeButton("CLOSE", null)
+            .show()
     }
 
     override fun onResume() {
         super.onResume()
         binding.dice3d.onResume()
+        binding.adView.resume()
         accelerometer?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME) }
     }
 
     override fun onPause() {
         sensorManager.unregisterListener(this)
         binding.dice3d.onPause()
+        binding.adView.pause()
         super.onPause()
     }
 
@@ -246,6 +270,7 @@ By tapping ACCEPT, you acknowledge that you have read and agree to these Terms o
     }
 
     override fun onDestroy() {
+        advertisingPrivacy.destroy()
         soundEngine.release()
         super.onDestroy()
     }

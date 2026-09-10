@@ -5,14 +5,26 @@ plugins {
 
 android {
     namespace = "com.haseltonmediagroup.realdice3d"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.haseltonmediagroup.realdice3d"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
+    }
+
+    val uploadKeystore = providers.environmentVariable("REALDICE_KEYSTORE_PATH").orNull
+    if (uploadKeystore != null) {
+        signingConfigs.create("upload") {
+            storeFile = file(uploadKeystore)
+            storePassword = providers.environmentVariable("REALDICE_STORE_PASSWORD").get()
+            keyAlias = providers.environmentVariable("REALDICE_KEY_ALIAS").get()
+            keyPassword = providers.environmentVariable("REALDICE_KEY_PASSWORD").get()
+            storeType = "JKS"
+        }
+        buildTypes.getByName("release").signingConfig = signingConfigs.getByName("upload")
     }
 
     buildFeatures { viewBinding = true }
@@ -29,4 +41,5 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("com.google.android.material:material:1.12.0")
     implementation("com.google.android.gms:play-services-ads:23.6.0")
+    implementation("com.google.android.ump:user-messaging-platform:4.0.0")
 }
