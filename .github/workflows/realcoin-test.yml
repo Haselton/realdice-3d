@@ -9,8 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Unpack RealCoin source
-        run: unzip -q realcoin-source.zip
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
