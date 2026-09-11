@@ -15,10 +15,12 @@ jobs:
           java-version: '17'
       - uses: android-actions/setup-android@v3
       - name: Install Android SDK 36
-        run: yes | sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+        run: yes | sdkmanager 'platforms;android-36' 'build-tools;36.0.0' || true
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.6.0'
+      - name: Fix OpenGL Matrix import
+        run: sed -i 's/import android.opengl.\*;/import android.opengl.*;\nimport android.opengl.Matrix;/' RealCoin3D/app/src/main/java/com/haselton/realcoin3d/Coin3DView.java
       - name: Build debug APK
         working-directory: RealCoin3D
         run: gradle :app:assembleDebug --stacktrace
