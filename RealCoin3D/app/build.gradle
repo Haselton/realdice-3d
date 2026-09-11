@@ -2,12 +2,12 @@ plugins { id 'com.android.application' }
 
 android {
     namespace 'com.haselton.realcoin3d'
-    compileSdk 37
+    compileSdk 36
 
     defaultConfig {
         applicationId 'com.haselton.realcoin3d'
         minSdk 23
-        targetSdk 37
+        targetSdk 36
         versionCode 2
         versionName '0.2.0'
     }
