@@ -9,18 +9,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
       - name: Install Android SDK 36
         run: yes | sdkmanager 'platforms;android-36' 'build-tools;36.0.0' || true
+      - name: Install Blender
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y blender
+      - name: Generate high-detail Blender coin mesh
+        run: |
+          mkdir -p RealCoin3D/app/src/main/assets
+          REALCOIN_OBJ=RealCoin3D/app/src/main/assets/quarter_high.obj blender -b --python tools/generate_realcoin_mesh.py
+          test -s RealCoin3D/app/src/main/assets/quarter_high.obj
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.6.0'
-      - name: Fix OpenGL Matrix import
-        run: sed -i 's/import android.opengl.\*;/import android.opengl.*;\nimport android.opengl.Matrix;/' RealCoin3D/app/src/main/java/com/haselton/realcoin3d/Coin3DView.java
       - name: Build debug APK
         working-directory: RealCoin3D
         run: gradle :app:assembleDebug --stacktrace
