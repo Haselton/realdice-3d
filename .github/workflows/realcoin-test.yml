@@ -1,0 +1,30 @@
+name: RealCoin 3D Test APK
+on:
+  push:
+    branches: [ realcoin-test-build ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unpack RealCoin source
+        run: unzip -q realcoin-source.zip
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK 37
+        run: yes | sdkmanager 'platforms;android-37' 'build-tools;36.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.6.0'
+      - name: Build debug APK
+        working-directory: RealCoin3D
+        run: gradle :app:assembleDebug --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RealCoin3D-test-apk
+          path: RealCoin3D/app/build/outputs/apk/debug/*.apk
