@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -35,6 +35,18 @@ jobs:
           wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz -O templates.tpz
           unzip -q templates.tpz
           cp -r templates/* "$HOME/.local/share/godot/export_templates/4.3.stable/"
+          test -f "$HOME/.local/share/godot/export_templates/4.3.stable/android_debug.apk"
+
+      - name: Install Godot Android SDK requirements
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" \
+            "platform-tools" \
+            "build-tools;34.0.0" \
+            "platforms;android-34" \
+            "cmdline-tools;latest" \
+            "cmake;3.10.2.4988404" \
+            "ndk;23.2.8568313"
 
       - name: Configure Android export
         run: |
@@ -48,11 +60,11 @@ jobs:
           export/android/java_sdk_path = "$JAVA_HOME"
           EOF
           test -x "$ANDROID_HOME/platform-tools/adb"
-          ls "$ANDROID_HOME/platforms" | tail
-          ls "$ANDROID_HOME/build-tools" | tail
+          test -d "$ANDROID_HOME/ndk/23.2.8568313"
+          test -d "$ANDROID_HOME/cmake/3.10.2.4988404"
 
-      - name: Import and validate project
-        run: godot --headless --editor --path frostline-v2 --quit --verbose
+      - name: Import project
+        run: godot --headless --editor --path frostline-v2 --quit
 
       - name: Export APK
         run: |
