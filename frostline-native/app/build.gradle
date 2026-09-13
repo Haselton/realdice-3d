@@ -7,11 +7,12 @@ android {
     compileSdk 35
 
     defaultConfig {
-        applicationId 'com.haseltonmediagroup.frostline3d'
+        // Separate test package avoids certificate conflicts with the earlier crash builds.
+        applicationId 'com.haseltonmediagroup.frostline3d.compat2'
         minSdk 26
         targetSdk 35
-        versionCode 3
-        versionName '0.3-3d'
+        versionCode 1
+        versionName '0.4-compat2'
     }
 
     buildTypes {
