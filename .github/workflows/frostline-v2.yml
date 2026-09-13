@@ -32,14 +32,28 @@ jobs:
           unzip -q templates.tpz
           cp -r templates/* "$HOME/.local/share/godot/export_templates/4.3.stable/"
 
-      - name: Create debug keystore
+      - name: Configure Android export
         run: |
-          mkdir -p "$HOME/.android"
+          mkdir -p "$HOME/.android" "$HOME/.config/godot"
           keytool -genkeypair -v -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey -keypass android -dname "CN=Android Debug,O=Android,C=US" -keyalg RSA -keysize 2048 -validity 10000
+          cat > "$HOME/.config/godot/editor_settings-4.tres" <<EOF
+          [gd_resource format=3]
+
+          [resource]
+          export/android/android_sdk_path = "$ANDROID_HOME"
+          export/android/java_sdk_path = "$JAVA_HOME"
+          export/android/debug_keystore = "$HOME/.android/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          EOF
+          cat "$HOME/.config/godot/editor_settings-4.tres"
+
+      - name: Import and validate project
+        run: godot --headless --editor --path frostline-v2 --quit --verbose
 
       - name: Export APK
         run: |
-          godot --headless --path frostline-v2 --export-debug Android "$GITHUB_WORKSPACE/Frost_Line_Shasta_v2.apk"
+          godot --headless --path frostline-v2 --export-debug Android "$GITHUB_WORKSPACE/Frost_Line_Shasta_v2.apk" --verbose
           ls -lh "$GITHUB_WORKSPACE/Frost_Line_Shasta_v2.apk"
 
       - uses: actions/upload-artifact@v4
