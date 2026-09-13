@@ -1,4 +1,4 @@
-name: Frost Line Native 3D APK
+name: Frost Line Android Baseline
 
 on:
   push:
@@ -21,36 +21,41 @@ jobs:
         with:
           gradle-version: '8.11.1'
 
-      - name: Build APK
+      - name: Restore persistent debug signing key
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: frost-line-debug-keystore-v1
+
+      - name: Create debug signing key if missing
+        run: |
+          mkdir -p "$HOME/.android"
+          if [ ! -f "$HOME/.android/debug.keystore" ]; then
+            keytool -genkeypair -v \
+              -keystore "$HOME/.android/debug.keystore" \
+              -storepass android \
+              -keypass android \
+              -alias androiddebugkey \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
+      - name: Build signed baseline APK
         run: gradle -p frostline-native assembleDebug --stacktrace
 
-      - name: Create test signing key
-        run: |
-          keytool -genkeypair -v \
-            -keystore "$RUNNER_TEMP/frostline-test.jks" \
-            -storepass android \
-            -keypass android \
-            -alias frostline \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -dname "CN=Frost Line Test,O=Haselton Media Group,C=US"
-
-      - name: Sign and verify APK
+      - name: Verify APK package and signatures
         run: |
           APK="frostline-native/app/build/outputs/apk/debug/app-debug.apk"
-          OUT="frostline-native/app/build/outputs/apk/debug/Frost-Line-Shasta-Compat2-SIGNED.apk"
+          OUT="$GITHUB_WORKSPACE/Frost-Line-Test-1.apk"
+          cp "$APK" "$OUT"
           APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)
-          test -n "$APKSIGNER"
-          "$APKSIGNER" sign \
-            --ks "$RUNNER_TEMP/frostline-test.jks" \
-            --ks-key-alias frostline \
-            --ks-pass pass:android \
-            --key-pass pass:android \
-            --out "$OUT" "$APK"
+          AAPT=$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -1)
           "$APKSIGNER" verify --verbose --print-certs "$OUT"
-          ls -lh "$OUT"
+          "$AAPT" dump badging "$OUT" | head -20
+          test -s "$OUT"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Frost-Line-Shasta-Compat2-SIGNED-APK
-          path: frostline-native/app/build/outputs/apk/debug/Frost-Line-Shasta-Compat2-SIGNED.apk
+          name: Frost-Line-Test-1-APK
+          path: Frost-Line-Test-1.apk
           if-no-files-found: error
