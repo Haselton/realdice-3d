@@ -1,0 +1,1 @@
+Retry native 3D APK after Gradle build-type fix.
