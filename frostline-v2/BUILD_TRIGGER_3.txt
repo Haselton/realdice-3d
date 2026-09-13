@@ -1,0 +1,1 @@
+Retry with corrected EditorSettings resource type.
