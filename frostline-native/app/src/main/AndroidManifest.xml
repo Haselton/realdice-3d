@@ -5,7 +5,7 @@
     <uses-feature android:name="android.hardware.sensor.gyroscope" android:required="false" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <application android:theme="@android:style/Theme.Material.Light.NoActionBar" android:label="Frost Line: Shasta" android:allowBackup="false" android:hardwareAccelerated="true">
-        <activity android:name=".MainActivity" android:screenOrientation="landscape" android:exported="true" android:configChanges="orientation|screenSize|keyboardHidden">
+        <activity android:name="com.haseltonmediagroup.frostline3d.MainActivity" android:screenOrientation="landscape" android:exported="true" android:configChanges="orientation|screenSize|keyboardHidden">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
