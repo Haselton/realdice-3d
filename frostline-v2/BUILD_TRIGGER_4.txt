@@ -1,0 +1,1 @@
+Retry with complete Android 34 / NDK r23c / CMake toolchain.
