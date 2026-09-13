@@ -1,0 +1,38 @@
+name: Frost Line Shasta Demo APK
+
+on:
+  push:
+    branches: [ "frost-line-shasta-demo" ]
+    paths:
+      - "frostline-demo-src.zip"
+      - ".github/workflows/frostline-demo.yml"
+  workflow_dispatch:
+
+jobs:
+  build-demo-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Unpack demo source
+        run: |
+          rm -rf frostline-demo
+          mkdir frostline-demo
+          unzip -q frostline-demo-src.zip -d frostline-demo
+      - name: Build debug APK
+        run: gradle -p frostline-demo assembleDebug
+      - name: Verify APK exists
+        run: |
+          test -f frostline-demo/app/build/outputs/apk/debug/app-debug.apk
+          ls -lh frostline-demo/app/build/outputs/apk/debug/app-debug.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Frost-Line-Shasta-Demo-APK
+          path: frostline-demo/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
